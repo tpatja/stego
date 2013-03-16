@@ -14,12 +14,14 @@
 */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 typedef struct ifd_entry {
 	short tag;
 	short field_type;
 	int n_values;
-	int value; /* value or offset */
+	int value; /* value or offset. value if it fits into 4 bytes */
 } ifd_entry_t;
 
 typedef struct tiff_info {
@@ -28,7 +30,7 @@ typedef struct tiff_info {
 	int width;
 	int height; 
 	int n_ifd_entries;
-	ifd_entry_t* ifd_entries;
+	ifd_entry_t** ifd_entries;
 } tiff_info_t;
 
 enum IFD_field_type {
@@ -62,8 +64,9 @@ enum Tiff_Tag {
 
 void tiff_info_free(tiff_info_t* th) {
 	for(int i=0; i<th->n_ifd_entries; ++i) {
-		free(&(th->ifd_entries[i]));
+		free(th->ifd_entries[i]);
 	}
+	free(th->ifd_entries);
 }
 
 char* name_for_tag(int tag) {
@@ -129,7 +132,7 @@ void parse_entry(FILE* fp, tiff_info_t* th, ifd_entry_t* ie) {
 void show_ascii_data(FILE* fp, tiff_info_t* th) {
 	int fpos = ftell(fp);
 	for(int i=0; i< th->n_ifd_entries; ++i) {
-		ifd_entry_t * entry = &(th->ifd_entries[i]);
+		ifd_entry_t * entry = th->ifd_entries[i];
 		if (entry->field_type == ifd_ASCII) {
 			fseek(fp, entry->value, /* value or offset */ 0);
 			char data[entry->n_values];
@@ -190,30 +193,28 @@ int main(int argc, char** argv)
 	}
 	
 	/* IFD addr */
-
 	int ifd_offset;
-	int read = fread(&ifd_offset, sizeof(int), 1, fp);
-	//printf("read=%d, ifd_offset=0x%x (%d))\n", read, ifd_offset);
-
-	int seek = fseek(fp, ifd_offset, 0);
-	//printf("seek=%d\n", seek);
+	fread(&ifd_offset, sizeof(int), 1, fp);
+	
+	fseek(fp, ifd_offset, 0);
 
 	short n_ifd_entries;
 	fread(&n_ifd_entries, sizeof(short), 1, fp);
 	//printf("n_ifd_entries=%d\n", n_ifd_entries);
 
-	th.ifd_entries = malloc(sizeof(ifd_entry_t)*n_ifd_entries);
 	th.n_ifd_entries = n_ifd_entries;
 
+	th.ifd_entries = malloc(sizeof(ifd_entry_t*) * n_ifd_entries);
+	
 	for(int i=0; i<n_ifd_entries; ++i) {
 
-		ifd_entry_t* ie = &(th.ifd_entries[i]);
-		//printf("sizeof ie=%d\n", sizeof(*ie));
-
+		ifd_entry_t* ie = malloc(sizeof(ifd_entry_t));
 		memset(ie, 0, sizeof(ifd_entry_t));
 		fread(ie, sizeof(ifd_entry_t), 1, fp);;
 		/*printf("  entry %d: %d (%s), %d, %d, %d\n", 
 			i, ie->tag, name_for_tag(ie->tag), ie->field_type, ie->n_values, ie->value);*/
+
+		th.ifd_entries[i] = ie;
 
 		parse_entry(fp, &th, ie);
 	}
