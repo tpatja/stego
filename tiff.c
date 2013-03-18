@@ -22,14 +22,14 @@
 
 #define FRAME_WIDTH 25
 
-typedef struct ifd_entry {
+typedef struct {
 	uint16_t tag;
 	uint16_t field_type;
 	uint32_t n_values;
 	uint32_t value; /* value or offset. value if it fits into 4 bytes */
 } ifd_entry_t;
 
-typedef struct tiff_info {
+typedef struct {
 	uint8_t endian; /* 0-> little, 1-> big*/
 	uint8_t compressed; /* != 1 if compressed */
 	uint32_t width;
@@ -54,7 +54,7 @@ enum IFD_field_type {
 
 static uint8_t n_tag_names = sizeof(tag_names) / sizeof(tag_name_t);
 
-typedef struct field_type_name {
+typedef struct {
 	uint8_t type;
 	char* name;
 } field_type_name_t;
@@ -296,7 +296,6 @@ uint8_t* copy_pixel_data(FILE* fp, tiff_info_t* ti) {
 		size += ti->strip_bytecounts[i];
 	}
 	printf("total image size: %d\n", size);
-
 	printf("width: %d,height: %d, w*h=%d, w*h*samples_per_pixel=%d\n", 
 		ti->width, ti->height, ti->width*ti->height, 
 		ti->width*ti->height*ti->samples_per_pixel);
@@ -315,10 +314,6 @@ uint8_t* copy_pixel_data(FILE* fp, tiff_info_t* ti) {
 }
 
 
-/*  pack RGBA values to 32-bit word */
-#define PACK_RGBA(r,g,b,a) \
-  (r) | (g << 8) | (b << 16) | (a << 24)
-
 
 /* adds a red frame around image (FRAME_WIDTH pixels thick) */
 void modify_pixel_data(tiff_info_t* ti, uint8_t* pixel_data) {
@@ -327,9 +322,6 @@ void modify_pixel_data(tiff_info_t* ti, uint8_t* pixel_data) {
 		for(uint16_t y=0; y<ti->height; ++y) {
 			uint32_t idx = (y*ti->width+x)*ti->samples_per_pixel;
 
-			// inverses colors
-			//pixel_data[idx] ^= 0xffffff;
-	
 			/* draw frame */
 			if(x % ti->width < FRAME_WIDTH 
 				|| ti->width - (x % ti->width) < FRAME_WIDTH
@@ -342,17 +334,7 @@ void modify_pixel_data(tiff_info_t* ti, uint8_t* pixel_data) {
 						pixel_data[idx+3] = 0xff;
 			}
 			
-			//uint32_t val = pixel_data[idx];
 
-		/*			
-			if(idx<50) {
-				uint8_t a = (val & 0xff000000) >> 24;
-				uint8_t b = (val & 0x00ff0000) >> 16;
-				uint8_t g = (val & 0x0000ff00) >> 8;
-				uint8_t r = (val & 0x000000ff);
-				printf("R=%u G=%u B=%u A=%u\n", r, g,b,a);
-			}
-			*/
 		}
 	}
 }
