@@ -3,10 +3,7 @@
 	Program for reading and modifying TIFF files. 
 
 	TODO:
-	+ add functionality for programmatically adding a frame around image
 	- add functionality for embedding hidden message in image data
-
-	read_tiff crashes with jopeg
 
 	Author: Teemu Patja <tpatja@cs.helsinki.fi>
 
@@ -27,8 +24,8 @@
 
 typedef struct ifd_entry {
 	uint16_t tag;
-	ushort field_type;
-	int n_values;
+	uint16_t field_type;
+	uint32_t n_values;
 	uint32_t value; /* value or offset. value if it fits into 4 bytes */
 } ifd_entry_t;
 
@@ -117,9 +114,9 @@ void read_at_offset(FILE* fp,
 		int count) 
 {
 	int fpos = ftell(fp);
-	fseek(fp, offset, 0);
+	fseek(fp, offset, SEEK_SET);
 	fread(data, size, count, fp);
-	fseek(fp, fpos, 0);
+	fseek(fp, fpos, SEEK_SET);
 }
 
 
@@ -140,8 +137,7 @@ uint8_t type_in_bytes(uint8_t type) {
 }
 
 int fits_in_header(ifd_entry_t* ie) {
-	//return ie->val > 8092;
-	return (type_in_bytes(ie->field_type) * ie->n_values) < 4;
+	return (type_in_bytes(ie->field_type) <= 4) && ie->n_values == 1;
 }
 
 
@@ -224,7 +220,7 @@ void parse_entry(FILE* fp, tiff_info_t* th, ifd_entry_t* ie) {
 			uint32_t values[ie->n_values];
 			read_at_offset(fp, ie->value, &values, sizeof(uint32_t), ie->n_values);
 			for(int i=0; i<ie->n_values; ++i) {
-				printf(" value %d: %u\n", i, values[i]);
+				printf(" value %u: %u\n", i, values[i]);
 			}
 			break;
 		}
@@ -242,8 +238,8 @@ void parse_entry(FILE* fp, tiff_info_t* th, ifd_entry_t* ie) {
 				uint16_t values[ie->n_values];
 				read_at_offset(fp, ie->value, &values, sizeof(uint16_t), ie->n_values);
 				for(int i=0; i<ie->n_values; ++i) {
-					printf(" value %d: %d\n", i, values[i]);
-				}				
+					printf(" value %u: %d\n", i, values[i]);
+				}
 			}
 			if(ie->tag == RowsPerStrip)
 				th->n_rows_per_strip = ie->value;
@@ -261,14 +257,14 @@ void show_ascii_data(FILE* fp, tiff_info_t* th) {
 	for(int i=0; i< th->n_ifd_entries; ++i) {
 		ifd_entry_t * entry = th->ifd_entries[i];
 		if (entry->field_type == ASCII) {
-			fseek(fp, entry->value, 0);
+			fseek(fp, entry->value, SEEK_SET);
 			char data[entry->n_values];
 			fread(data, sizeof(data), 1, fp);
 			printf("         (tag %s (0x%x)): %s\n",
 				 name_for_tag(entry->tag), entry->tag, data);
 		}
 	}
-	fseek(fp, fpos, 0);
+	fseek(fp, fpos, SEEK_SET);
 }
 
 char* compression_type(int ctype) {
@@ -387,7 +383,7 @@ void put_pixel_data(FILE* fp,
 	int num_read, num_written;
 	char buffer[100];
 
-	fseek(fp, 0, 0);
+	fseek(fp, 0, SEEK_SET);
 	while(feof(fp)==0){	
 		if((num_read = fread(buffer,1,100,fp))!=100){
 			if(ferror(fp)!=0){
@@ -439,7 +435,7 @@ tiff_info_t* read_tiff(FILE* fp) {
 	int ifd_offset;
 	fread(&ifd_offset, sizeof(int), 1, fp);
 	
-	fseek(fp, ifd_offset, 0);
+	fseek(fp, ifd_offset, SEEK_SET);
 
 	short n_ifd_entries;
 	fread(&n_ifd_entries, sizeof(short), 1, fp);
@@ -462,25 +458,26 @@ tiff_info_t* read_tiff(FILE* fp) {
 	}
 
 	// calculate strips-per-image
-	printf("ti->height=%d, ti->n_rows_per_strip=%d\n", ti->height, ti->n_rows_per_strip);
-	ti->n_strips = 
-		floor((ti->height + ti->n_rows_per_strip - 1)/ti->n_rows_per_strip);
+	if(ti->compressed == 1) { /* uncompressed */
+		printf("ti->height=%d, ti->n_rows_per_strip=%d\n", ti->height, ti->n_rows_per_strip);
+		ti->n_strips = 
+			floor((ti->height + ti->n_rows_per_strip - 1)/ti->n_rows_per_strip);
 
-
-	ti->strip_bytecounts = malloc(sizeof(uint32_t)*ti->n_strips);
-	ti->strip_offsets = malloc(sizeof(uint32_t)*ti->n_strips);
-	
-	ifd_entry_t* ie = entry_by_tag(ti, StripByteCounts);
-	uint32_t values[ie->n_values];
-	read_at_offset(fp, ie->value, &values, sizeof(uint32_t), ie->n_values);
-	for(int i=0; i<ie->n_values; ++i) {
-		ti->strip_bytecounts[i] = values[i];
-	}
-
-	ie = entry_by_tag(ti, StripOffsets);
-	read_at_offset(fp, ie->value, &values, sizeof(uint32_t), ie->n_values);
-	for(int i=0; i<ie->n_values; ++i) {
-		ti->strip_offsets[i] = values[i];
+		ti->strip_bytecounts = malloc(sizeof(uint32_t)*ti->n_strips);
+		ti->strip_offsets = malloc(sizeof(uint32_t)*ti->n_strips);
+		
+		ifd_entry_t* ie = entry_by_tag(ti, StripByteCounts);
+		uint32_t values[ie->n_values];
+		read_at_offset(fp, ie->value, &values, sizeof(uint32_t), ie->n_values);
+		for(int i=0; i<ie->n_values; ++i) {
+			ti->strip_bytecounts[i] = values[i];
+		}
+		
+		ie = entry_by_tag(ti, StripOffsets);
+		read_at_offset(fp, ie->value, &values, sizeof(uint32_t), ie->n_values);
+		for(int i=0; i<ie->n_values; ++i) {
+			ti->strip_offsets[i] = values[i];
+		}
 	}
 	return ti;
 }
