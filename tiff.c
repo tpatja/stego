@@ -72,14 +72,14 @@ static field_type_name_t field_type_names[] = {
 static uint8_t n_field_names = sizeof(field_type_names)/sizeof(field_type_name_t);
 
 
-void tiff_info_free(tiff_info_t* th) {
-	for(int i=0; i<th->n_ifd_entries; ++i) {
-		free(th->ifd_entries[i]);
+void tiff_info_free(tiff_info_t* ti) {
+	for(int i=0; i<ti->n_ifd_entries; ++i) {
+		free(ti->ifd_entries[i]);
 	}
-	free(th->ifd_entries);
-	//for(int i=0; i<th->n_strips; ++i) {
-		free(th->strip_offsets);
-		free(th->strip_bytecounts);
+	free(ti->ifd_entries);
+	//for(int i=0; i<ti->n_strips; ++i) {
+		free(ti->strip_offsets);
+		free(ti->strip_bytecounts);
 	//}
 }
 
@@ -141,30 +141,30 @@ int fits_in_header(ifd_entry_t* ie) {
 }
 
 
-ifd_entry_t* entry_by_tag(tiff_info_t* th, uint16_t tag) {
-	for(int i=0; i< th->n_ifd_entries; ++i) {
-		if(th->ifd_entries[i]->tag == tag)
-			return th->ifd_entries[i];
+ifd_entry_t* entry_by_tag(tiff_info_t* ti, uint16_t tag) {
+	for(int i=0; i< ti->n_ifd_entries; ++i) {
+		if(ti->ifd_entries[i]->tag == tag)
+			return ti->ifd_entries[i];
 	}
 	return 0;
 }
 
 /* parse entry dat, update th id needed */
-void parse_entry(FILE* fp, tiff_info_t* th, ifd_entry_t* ie) {
+void parse_entry(FILE* fp, tiff_info_t* ti, ifd_entry_t* ie) {
 	switch(ie->tag) {
 		case ImageWidth:
 		{
-			th->width = ie->value; /* value or offset */
+			ti->width = ie->value; /* value or offset */
 			break;
 		}
 		case ImageLength:
 		{
-			th->height = ie->value; /* value or offset */
+			ti->height = ie->value; /* value or offset */
 			break;
 		}
 		case Compression:
 		{
-			th->compressed = ie->value;
+			ti->compressed = ie->value;
 			break;
 		}
 		case NewSubfileType:
@@ -180,7 +180,7 @@ void parse_entry(FILE* fp, tiff_info_t* th, ifd_entry_t* ie) {
 
 		case PhotometricInterpretation:
 		{
-			th->photometric_interpretation = ie->value;
+			ti->photometric_interpretation = ie->value;
 			switch(ie->value)
 			{
 				case 0:
@@ -226,7 +226,7 @@ void parse_entry(FILE* fp, tiff_info_t* th, ifd_entry_t* ie) {
 		}
 
 		case SamplesPerPixel:
-			th->samples_per_pixel = ie->value;
+			ti->samples_per_pixel = ie->value;
 		case BitsPerSample:
 		case RowsPerStrip:
 		{
@@ -242,7 +242,7 @@ void parse_entry(FILE* fp, tiff_info_t* th, ifd_entry_t* ie) {
 				}
 			}
 			if(ie->tag == RowsPerStrip)
-				th->n_rows_per_strip = ie->value;
+				ti->n_rows_per_strip = ie->value;
 
 			break;
 		}
@@ -252,10 +252,10 @@ void parse_entry(FILE* fp, tiff_info_t* th, ifd_entry_t* ie) {
 }
 
 /* show IFD values with ASCII type */
-void show_ascii_data(FILE* fp, tiff_info_t* th) {
+void show_ascii_data(FILE* fp, tiff_info_t* ti) {
 	int fpos = ftell(fp);
-	for(int i=0; i< th->n_ifd_entries; ++i) {
-		ifd_entry_t * entry = th->ifd_entries[i];
+	for(int i=0; i< ti->n_ifd_entries; ++i) {
+		ifd_entry_t * entry = ti->ifd_entries[i];
 		if (entry->field_type == ASCII) {
 			fseek(fp, entry->value, SEEK_SET);
 			char data[entry->n_values];
@@ -279,77 +279,68 @@ char* compression_type(int ctype) {
 	}
 }
 
-void show_tiff_info(FILE* fp, tiff_info_t* th) {
-	printf("endianness: %s\n", th->endian == 0 ? "little (MSB)" : "big (LSB)");
-	printf("compressed: %d (%s)\n", th->compressed, compression_type(th->compressed));
-	printf("dimensions: %dx%d pixels\n", th->width, th->height);
-	printf("strips: %d\n", th->n_strips);
+void show_tiff_info(FILE* fp, tiff_info_t* ti) {
+	printf("endianness: %s\n", ti->endian == 0 ? "little (MSB)" : "big (LSB)");
+	printf("compressed: %d (%s)\n", ti->compressed, compression_type(ti->compressed));
+	printf("dimensions: %dx%d pixels\n", ti->width, ti->height);
+	printf("strips: %d\n", ti->n_strips);
 	printf("fields with ASCII value:\n");
-	show_ascii_data(fp, th);
+	show_ascii_data(fp, ti);
 }
 
-
-typedef struct rgba_pixel_t {
-	uint8_t r;
-	uint8_t g;
-	uint8_t b;
-	uint8_t a;
-} rgba_pixel_t;
-
-
 /* mallocs a copy of pixel data in image. assumes chunked RGB format */
-uint32_t* copy_pixel_data(FILE* fp, tiff_info_t* th) {
+uint8_t* copy_pixel_data(FILE* fp, tiff_info_t* ti) {
 
 	uint32_t size=0;
-	for(int i=0; i<th->n_strips; ++i) {
-		size += th->strip_bytecounts[i];
+	for(int i=0; i<ti->n_strips; ++i) {
+		size += ti->strip_bytecounts[i];
 	}
 	printf("total image size: %d\n", size);
 
-	printf("width: %d,height: %d, w*h=%d, w*h*4=%d\n", 
-		th->width, th->height, th->width*th->height, th->width*th->height*4);
+	printf("width: %d,height: %d, w*h=%d, w*h*samples_per_pixel=%d\n", 
+		ti->width, ti->height, ti->width*ti->height, 
+		ti->width*ti->height*ti->samples_per_pixel);
 
-	uint32_t* ret = malloc( size );
-	uint32_t* ptr = ret;
+	uint8_t* ret = malloc( size );
+	uint8_t* ptr = ret;
 
-	for(int i=0; i<th->n_strips; ++i) {
-		uint32_t bc = th->strip_bytecounts[i];
-		//uint8_t* strip = malloc(bc);
-		int count = bc/sizeof(uint32_t);
-		//printf("count=%d\n", count);m
-		fseek(fp, th->strip_offsets[i], SEEK_SET);
-		fread(ptr, sizeof(uint32_t), count, fp);
-		//memcpy(ptr, strip, bc);
-		//free(strip);
+	for(int i=0; i<ti->n_strips; ++i) {
+		fseek(fp, ti->strip_offsets[i], SEEK_SET);
+		fread(ptr, 1, ti->strip_bytecounts[i], fp);
 
-		if(i<(th->n_strips -1))
-			ptr += count;
+		if(i<(ti->n_strips -1))
+			ptr += ti->strip_bytecounts[i];
 	}
 	return ret;
 }
 
 
+/*  pack RGBA values to 32-bit word */
 #define PACK_RGBA(r,g,b,a) \
   (r) | (g << 8) | (b << 16) | (a << 24)
 
+
 /* adds a red frame around image (FRAME_WIDTH pixels thick) */
-void modify_pixel_data(tiff_info_t* th, uint32_t* pixel_data) {
+void modify_pixel_data(tiff_info_t* ti, uint8_t* pixel_data) {
 	
-	for(uint16_t x=0; x<th->width; ++x) {
-		for(uint16_t y=0; y<th->height; ++y) {
-			uint32_t idx = y*th->width+x;
+	for(uint16_t x=0; x<ti->width; ++x) {
+		for(uint16_t y=0; y<ti->height; ++y) {
+			uint32_t idx = (y*ti->width+x)*ti->samples_per_pixel;
 
 			// inverses colors
 			//pixel_data[idx] ^= 0xffffff;
-			
-			//pixel_data[idx] = PACKW4(255,0,0,0);
-
+	
 			/* draw frame */
-			if(x % th->width < FRAME_WIDTH 
-				|| th->width - (x % th->width) < FRAME_WIDTH
-				||y % th->height < FRAME_WIDTH 
-				|| th->height - (y % th->height) < FRAME_WIDTH )
-					pixel_data[idx] = PACK_RGBA(255,0,0,255);
+			if(x % ti->width < FRAME_WIDTH 
+				|| ti->width - (x % ti->width) < FRAME_WIDTH
+				||y % ti->height < FRAME_WIDTH 
+				|| ti->height - (y % ti->height) < FRAME_WIDTH ) {
+					pixel_data[idx] = 0xff;
+					pixel_data[idx+1] = 0x00;
+					pixel_data[idx+2] = 0x00;
+					if(ti->samples_per_pixel>3)
+						pixel_data[idx+3] = 0xff;
+			}
 			
 			//uint32_t val = pixel_data[idx];
 
@@ -371,8 +362,8 @@ void modify_pixel_data(tiff_info_t* th, uint32_t* pixel_data) {
    given pixel data to it */
 void put_pixel_data(FILE* fp, 
 	char* outfile, 
-	tiff_info_t* th, 
-	uint32_t* pixel_data) {
+	tiff_info_t* ti, 
+	uint8_t* pixel_data) {
 
 	/* copy file */
 	FILE* out_file;
@@ -399,11 +390,10 @@ void put_pixel_data(FILE* fp,
 	}
 	/* write pixel data */
 	uint32_t pos = 0;
-	for(int i=0; i<th->n_strips; ++i) {
-		int count = th->strip_bytecounts[i]/sizeof(uint32_t);
-		fseek(out_file, th->strip_offsets[i], SEEK_SET);
-		fwrite(&(pixel_data[pos]), sizeof(uint32_t), count, out_file);
-		pos += count;
+	for(int i=0; i<ti->n_strips; ++i) {
+		fseek(out_file, ti->strip_offsets[i], SEEK_SET);
+		fwrite(&(pixel_data[pos]), 1, ti->strip_bytecounts[i], out_file);
+		pos += ti->strip_bytecounts[i];
 	}	
 	fclose(out_file);
 }
@@ -500,19 +490,19 @@ int main(int argc, char** argv)
 
 	if(ti->compressed != 1 
 		|| ti->photometric_interpretation != 2 
-		|| ti->samples_per_pixel != 4 ) {
-		printf("Data modification possible only with non-compressed RGBA files\n");
+		|| (ti->samples_per_pixel != 3 && ti->samples_per_pixel != 4) ) {
+		printf("Data modification possible only with non-compressed "
+			     "RGB and RGBA files\n");
 		exit(0);
 	}
 
 	printf("copying\n");
-	uint32_t* pixel_data = copy_pixel_data(fp, ti);
+	uint8_t* pixel_data = copy_pixel_data(fp, ti);
 	printf("adding frame\n");
 	modify_pixel_data(ti, pixel_data);
 	printf("saving to %s\n", outfile);
 	put_pixel_data(fp, outfile, ti, pixel_data);
 	printf("done\n");
-	
 
 	free(pixel_data);
 	fclose(fp);

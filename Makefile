@@ -10,5 +10,5 @@ clean:
 	rm -f tifftest.exe
 
 test: tifftest
-	./tifftest.exe ../nokia.tif foo.tif
+	./tifftest.exe ../nokia2.tif foo.tif
 #../cicrles.tif
