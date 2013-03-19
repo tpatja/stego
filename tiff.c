@@ -18,6 +18,7 @@
 #include <string.h>
 #include <math.h>
 
+#include "util.h"
 #include "tags.h"
 
 #define FRAME_WIDTH 25
@@ -313,8 +314,6 @@ uint8_t* copy_pixel_data(FILE* fp, tiff_info_t* ti) {
 	return ret;
 }
 
-
-
 /* adds a red frame around image (FRAME_WIDTH pixels thick) */
 void modify_pixel_data(tiff_info_t* ti, uint8_t* pixel_data) {
 	
@@ -333,7 +332,6 @@ void modify_pixel_data(tiff_info_t* ti, uint8_t* pixel_data) {
 					if(ti->samples_per_pixel>3)
 						pixel_data[idx+3] = 0xff;
 			}
-			
 
 		}
 	}
@@ -347,30 +345,11 @@ void put_pixel_data(FILE* fp,
 	tiff_info_t* ti, 
 	uint8_t* pixel_data) {
 
-	/* copy file */
-	FILE* out_file;
-	if((out_file = fopen(outfile, "wb")) == 0) {
-		fprintf(stderr, "failed to open %s for writing\n", outfile);
+	if(cp_file(fp, outfile) != 0)
 		exit(1);
-	}
-	int num_read, num_written;
-	char buffer[100];
 
-	fseek(fp, 0, SEEK_SET);
-	while(feof(fp)==0){	
-		if((num_read = fread(buffer,1,100,fp))!=100){
-			if(ferror(fp)!=0){
-			fprintf(stderr,"read file error.\n");
-			exit(1);
-			}
-			else if(feof(fp)!=0);
-		}
-		if((num_written = fwrite(buffer, 1, num_read, out_file)) != num_read){
-			fprintf(stderr,"write file error.\n");
-			exit(1);
-		}
-	}
 	/* write pixel data */
+	FILE* out_file = fopen(outfile, "rb+");
 	uint32_t pos = 0;
 	for(int i=0; i<ti->n_strips; ++i) {
 		fseek(out_file, ti->strip_offsets[i], SEEK_SET);
