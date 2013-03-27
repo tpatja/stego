@@ -18,59 +18,11 @@
 #include <string.h>
 #include <math.h>
 
+#include "tiff.h"
 #include "util.h"
 #include "tags.h"
 
 #define FRAME_WIDTH 25
-
-typedef struct {
-	uint16_t tag;
-	uint16_t field_type;
-	uint32_t n_values;
-	uint32_t value; /* value or offset. value if it fits into 4 bytes */
-} ifd_entry_t;
-
-typedef struct {
-	uint8_t endian; /* 0-> little, 1-> big*/
-	uint8_t compressed; /* != 1 if compressed */
-	uint32_t width;
-	uint32_t height; 
-	uint8_t n_ifd_entries;
-	uint16_t n_strips; 
-	uint16_t n_rows_per_strip;
-	uint8_t samples_per_pixel;
-	uint32_t* strip_offsets;
-	uint32_t* strip_bytecounts;
-	uint8_t photometric_interpretation;
-	ifd_entry_t** ifd_entries;
-} tiff_info_t;
-
-enum IFD_field_type {
-	BYTE = 1,  /* 8-bit uint32_t */
-	ASCII = 2, /* 8-bit byte containing 7-bit ASCII code. last byte must be NUL */
-	SHORT = 3, /* 2-byte uint32_t */
-	LONG = 4,  /* 4-byte uint32_t */
-	RATIONAL = 5, /* 64 bits. two LONGs */
-};
-
-static uint8_t n_tag_names = sizeof(tag_names) / sizeof(tag_name_t);
-
-typedef struct {
-	uint8_t type;
-	char* name;
-} field_type_name_t;
-
-#define NAME_ENTRY( name ) { name, #name } 
-
-static field_type_name_t field_type_names[] = {
-	NAME_ENTRY( BYTE ),
-	NAME_ENTRY( ASCII ),
-	NAME_ENTRY( SHORT ),
-	NAME_ENTRY( LONG ),
-	NAME_ENTRY( RATIONAL ),
-};
-
-static uint8_t n_field_names = sizeof(field_type_names)/sizeof(field_type_name_t);
 
 
 void tiff_info_free(tiff_info_t* ti) {
@@ -106,18 +58,6 @@ uint8_t tag_by_name(char* name) {
 			return tag_names[i].tag;
 	}
 	return -1;
-}
-
-void read_at_offset(FILE* fp, 
-		int offset, 
-		void* data, 
-		size_t size, 
-		int count) 
-{
-	int fpos = ftell(fp);
-	fseek(fp, offset, SEEK_SET);
-	fread(data, size, count, fp);
-	fseek(fp, fpos, SEEK_SET);
 }
 
 
@@ -431,44 +371,4 @@ tiff_info_t* read_tiff(FILE* fp) {
 		}
 	}
 	return ti;
-}
-
-int main(int argc, char** argv)
-{
-	if(argc != 3) {
-		printf(" Modifies TIFF files\n");
-		printf("USAGE: %s <TIFF file> <output file>\n", argv[0]);
-		return -1;
-	}
-	char* infile = argv[1];
-	char* outfile = argv[2];
-
-	FILE* fp = fopen(infile, "rb");
-
-	tiff_info_t* ti;
-	ti = read_tiff(fp);
-	show_tiff_info(fp, ti);
-
-	if(ti->compressed != 1 
-		|| ti->photometric_interpretation != 2 
-		|| (ti->samples_per_pixel != 3 && ti->samples_per_pixel != 4) ) {
-		printf("Data modification possible only with non-compressed "
-			     "RGB and RGBA files\n");
-		exit(0);
-	}
-
-	printf("copying\n");
-	uint8_t* pixel_data = copy_pixel_data(fp, ti);
-	printf("adding frame\n");
-	modify_pixel_data(ti, pixel_data);
-	printf("saving to %s\n", outfile);
-	put_pixel_data(fp, outfile, ti, pixel_data);
-	printf("done\n");
-
-	free(pixel_data);
-	fclose(fp);
-	tiff_info_free(ti);
-	free(ti);
-
-	return 0;
 }

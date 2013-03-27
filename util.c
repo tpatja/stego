@@ -1,6 +1,34 @@
 /* util.c */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+uint8_t file_exists(char* file) {
+	struct stat s;
+	return (stat(file, &s) == 0);
+}
+
+uint8_t read_byte(FILE* fp) {
+	uint8_t val;
+	fread(&val, sizeof(val), 1, fp);
+	return val;
+}
+
+size_t read_at_offset(FILE* fp, 
+		int offset, 
+		void* data, 
+		size_t size, 
+		int count) 
+{
+	int fpos = ftell(fp);
+	fseek(fp, offset, SEEK_SET);
+	size_t read = fread(data, size, count, fp);
+	fseek(fp, fpos, SEEK_SET);
+	return read;
+}
+
 
 uint8_t cp_file(FILE* src, char* dest) {
 	/* copy file */

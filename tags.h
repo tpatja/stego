@@ -1,6 +1,27 @@
 #ifndef _TAGS_H
 #define _TAGS_H 1
 
+typedef struct {
+  uint8_t type;
+  char* name;
+} field_type_name_t;
+
+typedef struct tag_name {
+  uint16_t tag;
+  char * name;
+} tag_name_t;
+
+
+#define NAME_ENTRY( name ) { name, #name } 
+
+enum IFD_field_type {
+  BYTE = 1,  /* 8-bit uint32_t */
+  ASCII = 2, /* 8-bit byte containing 7-bit ASCII code. last byte must be NUL */
+  SHORT = 3, /* 2-byte uint32_t */
+  LONG = 4,  /* 4-byte uint32_t */
+  RATIONAL = 5, /* 64 bits. two LONGs */
+};
+
 enum tiff_tags {
 	NewSubfileType = 254, /* FE LONG 1 */
 	SubfileType = 255, /* FF SHORT 1*/
@@ -78,88 +99,94 @@ enum tiff_tags {
 
 };
 
-
-typedef struct tag_name {
-  uint16_t tag;
-  char * name;
-} tag_name_t;
-
-#define TAG_NAME_ENTRY(name) { name, #name }
-
 static tag_name_t tag_names[] = {
 	/* generated from tiff_tags enum */
-  TAG_NAME_ENTRY( NewSubfileType ),
-  TAG_NAME_ENTRY( SubfileType ),
-  TAG_NAME_ENTRY( ImageWidth ),
-  TAG_NAME_ENTRY( ImageLength ),
-  TAG_NAME_ENTRY( BitsPerSample ),
-  TAG_NAME_ENTRY( Compression ),
-  TAG_NAME_ENTRY( PhotometricInterpretation ),
-  TAG_NAME_ENTRY( Threshholding ),
-  TAG_NAME_ENTRY( CellWidth ),
-  TAG_NAME_ENTRY( CellLength ),
-  TAG_NAME_ENTRY( FillOrder ),
-  TAG_NAME_ENTRY( DocumentName ),
-  TAG_NAME_ENTRY( ImageDescription ),
-  TAG_NAME_ENTRY( Make ),
-  TAG_NAME_ENTRY( Model ),
-  TAG_NAME_ENTRY( StripOffsets ),
-  TAG_NAME_ENTRY( Orientation ),
-  TAG_NAME_ENTRY( SamplesPerPixel ),
-  TAG_NAME_ENTRY( RowsPerStrip ),
-  TAG_NAME_ENTRY( StripByteCounts ),
-  TAG_NAME_ENTRY( MinSampleValue ),
-  TAG_NAME_ENTRY( MaxSampleValue ),
-  TAG_NAME_ENTRY( XResolution ),
-  TAG_NAME_ENTRY( YResolution ),
-  TAG_NAME_ENTRY( PlanarConfiguration ),
-  TAG_NAME_ENTRY( PageName ),
-  TAG_NAME_ENTRY( XPosition ),
-  TAG_NAME_ENTRY( YPosition ),
-  TAG_NAME_ENTRY( FreeOffsets ),
-  TAG_NAME_ENTRY( FreeByteCounts ),
-  TAG_NAME_ENTRY( GrayResponseUnit ),
-  TAG_NAME_ENTRY( GrayResponseCurve ),
-  TAG_NAME_ENTRY( T4Options ),
-  TAG_NAME_ENTRY( T6Options ),
-  TAG_NAME_ENTRY( ResolutionUnit ),
-  TAG_NAME_ENTRY( PageNumber ),
-  TAG_NAME_ENTRY( Software ),
-  TAG_NAME_ENTRY( DateTime ),
-  TAG_NAME_ENTRY( Artist ),
-  TAG_NAME_ENTRY( HostComputer ),
-  TAG_NAME_ENTRY( Predictor ),
-  TAG_NAME_ENTRY( WhitePoint ),
-  TAG_NAME_ENTRY( PrimaryChromaticities ),
-  TAG_NAME_ENTRY( ColorMap ),
-  TAG_NAME_ENTRY( HalftoneHints ),
-  TAG_NAME_ENTRY( TileWidth ),
-  TAG_NAME_ENTRY( TileLength ),
-  TAG_NAME_ENTRY( TileOffsets ),
-  TAG_NAME_ENTRY( TileByteCounts ),
-  TAG_NAME_ENTRY( InkSet ),
-  TAG_NAME_ENTRY( InkNames ),
-  TAG_NAME_ENTRY( NumberOfInks ),
-  TAG_NAME_ENTRY( DotRange ),
-  TAG_NAME_ENTRY( TargetPrinter ),
-  TAG_NAME_ENTRY( ExtraSamples ),
-  TAG_NAME_ENTRY( SampleFormat ),
-  TAG_NAME_ENTRY( SMinSampleValue ),
-  TAG_NAME_ENTRY( SMaxSampleValue ),
-  TAG_NAME_ENTRY( TransferRange ),
-  TAG_NAME_ENTRY( JPEGProc ),
-  TAG_NAME_ENTRY( JPEGInterchangeFormat ),
-  TAG_NAME_ENTRY( JPEGInterchangeFormatLngth ),
-  TAG_NAME_ENTRY( JPEGRestartInterval ),
-  TAG_NAME_ENTRY( JPEGLosslessPredictors ),
-  TAG_NAME_ENTRY( JPEGPointTransforms ),
-  TAG_NAME_ENTRY( JPEGQTables ),
-  TAG_NAME_ENTRY( JPEGDCTables ),
-  TAG_NAME_ENTRY( JPEGACTables ),
-  TAG_NAME_ENTRY( YCbCrCoefficients ),
-  TAG_NAME_ENTRY( YCbCrSubSampling ),
-  TAG_NAME_ENTRY( YCbCrPositioning ),
-  TAG_NAME_ENTRY( ReferenceBlackWhite ),
-  TAG_NAME_ENTRY( Copyright )
+  NAME_ENTRY( NewSubfileType ),
+  NAME_ENTRY( SubfileType ),
+  NAME_ENTRY( ImageWidth ),
+  NAME_ENTRY( ImageLength ),
+  NAME_ENTRY( BitsPerSample ),
+  NAME_ENTRY( Compression ),
+  NAME_ENTRY( PhotometricInterpretation ),
+  NAME_ENTRY( Threshholding ),
+  NAME_ENTRY( CellWidth ),
+  NAME_ENTRY( CellLength ),
+  NAME_ENTRY( FillOrder ),
+  NAME_ENTRY( DocumentName ),
+  NAME_ENTRY( ImageDescription ),
+  NAME_ENTRY( Make ),
+  NAME_ENTRY( Model ),
+  NAME_ENTRY( StripOffsets ),
+  NAME_ENTRY( Orientation ),
+  NAME_ENTRY( SamplesPerPixel ),
+  NAME_ENTRY( RowsPerStrip ),
+  NAME_ENTRY( StripByteCounts ),
+  NAME_ENTRY( MinSampleValue ),
+  NAME_ENTRY( MaxSampleValue ),
+  NAME_ENTRY( XResolution ),
+  NAME_ENTRY( YResolution ),
+  NAME_ENTRY( PlanarConfiguration ),
+  NAME_ENTRY( PageName ),
+  NAME_ENTRY( XPosition ),
+  NAME_ENTRY( YPosition ),
+  NAME_ENTRY( FreeOffsets ),
+  NAME_ENTRY( FreeByteCounts ),
+  NAME_ENTRY( GrayResponseUnit ),
+  NAME_ENTRY( GrayResponseCurve ),
+  NAME_ENTRY( T4Options ),
+  NAME_ENTRY( T6Options ),
+  NAME_ENTRY( ResolutionUnit ),
+  NAME_ENTRY( PageNumber ),
+  NAME_ENTRY( Software ),
+  NAME_ENTRY( DateTime ),
+  NAME_ENTRY( Artist ),
+  NAME_ENTRY( HostComputer ),
+  NAME_ENTRY( Predictor ),
+  NAME_ENTRY( WhitePoint ),
+  NAME_ENTRY( PrimaryChromaticities ),
+  NAME_ENTRY( ColorMap ),
+  NAME_ENTRY( HalftoneHints ),
+  NAME_ENTRY( TileWidth ),
+  NAME_ENTRY( TileLength ),
+  NAME_ENTRY( TileOffsets ),
+  NAME_ENTRY( TileByteCounts ),
+  NAME_ENTRY( InkSet ),
+  NAME_ENTRY( InkNames ),
+  NAME_ENTRY( NumberOfInks ),
+  NAME_ENTRY( DotRange ),
+  NAME_ENTRY( TargetPrinter ),
+  NAME_ENTRY( ExtraSamples ),
+  NAME_ENTRY( SampleFormat ),
+  NAME_ENTRY( SMinSampleValue ),
+  NAME_ENTRY( SMaxSampleValue ),
+  NAME_ENTRY( TransferRange ),
+  NAME_ENTRY( JPEGProc ),
+  NAME_ENTRY( JPEGInterchangeFormat ),
+  NAME_ENTRY( JPEGInterchangeFormatLngth ),
+  NAME_ENTRY( JPEGRestartInterval ),
+  NAME_ENTRY( JPEGLosslessPredictors ),
+  NAME_ENTRY( JPEGPointTransforms ),
+  NAME_ENTRY( JPEGQTables ),
+  NAME_ENTRY( JPEGDCTables ),
+  NAME_ENTRY( JPEGACTables ),
+  NAME_ENTRY( YCbCrCoefficients ),
+  NAME_ENTRY( YCbCrSubSampling ),
+  NAME_ENTRY( YCbCrPositioning ),
+  NAME_ENTRY( ReferenceBlackWhite ),
+  NAME_ENTRY( Copyright )
 };
+
+static field_type_name_t field_type_names[] = {
+  NAME_ENTRY( BYTE ),
+  NAME_ENTRY( ASCII ),
+  NAME_ENTRY( SHORT ),
+  NAME_ENTRY( LONG ),
+  NAME_ENTRY( RATIONAL ),
+};
+
+static uint8_t n_tag_names = sizeof(tag_names) / sizeof(tag_name_t);
+static uint8_t n_field_names = 
+  sizeof(field_type_names) / sizeof(field_type_name_t);
+
+
 #endif
