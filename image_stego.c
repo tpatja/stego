@@ -23,22 +23,6 @@ char* get_hidden_msg_bmp(bmp_info_t* bi,
 	uint8_t reverse_bits) {
 
 	return reveal_message(pixel_data, bi->data_size, reverse_bits);
-	/*FILE* fp = fopen(filename, "rb");
-	uint32_t pixel_offset = read_pixel_offset_bmp(fp);
-	
-	fseek(fp, pixel_offset, SEEK_SET);
-	
-	char* msg = malloc(1);
-	uint32_t i=0;
-	for(;;) {
-		uint8_t decoded = extract_byte(fp, reverse_bits);;
-		msg = realloc(msg, ++i);
-		memcpy(msg +(i-1), &decoded, 1);
-		if(decoded==0)
-			break;
-	}
-	printf("hidden message='%s'\n", msg );
-	free(msg);*/
 }
 
 char* get_hidden_msg_tiff(tiff_info_t* ti, 
@@ -61,41 +45,7 @@ void hide_message_bmp(FILE* fp,
 
 	hide_message(msg, pixel_data, bi->data_size, reverse_bits);
 	put_pixel_data_bmp(fp, out_file, bi, pixel_data);
-	
-	/*
-	printf("hide_message: msg='%s'\n", msg);
-	FILE* fp = fopen(bmp_file_in, "rb");
 
-	if(cp_file(fp, bmp_file_out) != 0)
-		exit(1);
-	fclose(fp);
-	
-	FILE* fp_out = fopen(bmp_file_out, "rb+");
-
-	uint32_t pixel_offset = read_pixel_offset_bmp(fp_out);
-	//printf(" pixel_offset=%u\n", pixel_offset );
-	fseek(fp_out, pixel_offset, SEEK_SET);
-	
-	uint32_t msg_len = strlen(msg);
-	int len = (msg_len+1)*8;
-	uint8_t* pdata = malloc( len );
-	fread(pdata, 1, len, fp_out);
-	//printf("read %u bytes, msg len=%d, data len=%d\n", read, msg_len, len);
-
-	//hexdump(pdata, len);
-
-	for(int i=0; i <= msg_len; ++i) {
-		//printf("msg[%d]=%c\n", i, msg[i]);
-		hide_byte(pdata, msg[i], reverse_bits);
-		pdata += 8;
-		if(i==msg_len)
-			pdata -= (len);
-	}
-	fseek(fp_out, pixel_offset, SEEK_SET);
-	fwrite(pdata, 1, len, fp_out);
-	fclose(fp_out);
-	free(pdata);
-	*/
 }
 
 
@@ -224,7 +174,7 @@ void handle_bmp(uint8_t opmode,
 			FILE* data_f = fopen(data_file, "rb");
 			/* ensure data fits into image */
 			long data_size = file_size_fp(data_f);
-			printf("data_size=%ld, bi->data_size/8=%ld\n", data_size, (long)bi->data_size/8);
+			//printf("data_size=%ld, bi->data_size/8=%ld\n", data_size, (long)bi->data_size/8);
 			if(data_size > (bi->data_size/8)) {
 				fprintf(stderr, "data is too large to fit in image\n");
 				exit(1);

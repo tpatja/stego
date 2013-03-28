@@ -111,12 +111,13 @@ void parse_entry(FILE* fp, tiff_info_t* ti, ifd_entry_t* ie) {
 		}
 		case NewSubfileType:
 		{
+			/*
 			uint32_t mask = 1 << 1;
 			printf(" reduced-resolution: %d\n", ie->value & mask); 
 			mask = 1 << 2;
 			printf(" multi-page: %d\n", ie->value & mask); 
 			mask = 1 << 3;
-			printf(" transparency-mask: %d\n", ie->value & mask); 
+			printf(" transparency-mask: %d\n", ie->value & mask); */
 			break;
 		}
 
@@ -127,27 +128,27 @@ void parse_entry(FILE* fp, tiff_info_t* ti, ifd_entry_t* ie) {
 			{
 				case 0:
 				{
-					printf(" WhiteIsZero\n");
+					//printf(" WhiteIsZero\n");
 					break;
 				}
 				case 1:
 				{
-					printf(" BlackIsZero\n");
+					//printf(" BlackIsZero\n");
 					break;
 				}
 				case 2:
 				{
-					printf(" RGB\n");
+					//printf(" RGB\n");
 					break;
 				}
 				case 3:
 				{
-					printf(" Palette color\n");
+					//printf(" Palette color\n");
 					break;
 				}
 				case 4:
 				{
-					printf(" Transparency mask\n");
+					//printf(" Transparency mask\n");
 					break;
 				}
 				default: break;
@@ -158,11 +159,11 @@ void parse_entry(FILE* fp, tiff_info_t* ti, ifd_entry_t* ie) {
 		case StripByteCounts:
 		case StripOffsets:
 		{
-			printf(" (%s)\n", name_for_tag(ie->tag));
+			//printf(" (%s)\n", name_for_tag(ie->tag));
 			uint32_t values[ie->n_values];
 			read_at_offset(fp, ie->value, &values, sizeof(uint32_t), ie->n_values);
 			for(int i=0; i<ie->n_values; ++i) {
-				printf(" value %u: %u\n", i, values[i]);
+				//printf(" value %u: %u\n", i, values[i]);
 			}
 			break;
 		}
@@ -172,15 +173,15 @@ void parse_entry(FILE* fp, tiff_info_t* ti, ifd_entry_t* ie) {
 		case BitsPerSample:
 		case RowsPerStrip:
 		{
-			printf(" (%s)\n", name_for_tag(ie->tag));
+			//printf(" (%s)\n", name_for_tag(ie->tag));
 			if(fits_in_header(ie)) {
-				printf(" %d\n", ie->value);
+				//printf(" %d\n", ie->value);
 			}
 			else {
 				uint16_t values[ie->n_values];
 				read_at_offset(fp, ie->value, &values, sizeof(uint16_t), ie->n_values);
 				for(int i=0; i<ie->n_values; ++i) {
-					printf(" value %u: %d\n", i, values[i]);
+					//printf(" value %u: %d\n", i, values[i]);
 				}
 			}
 			if(ie->tag == RowsPerStrip)
@@ -235,10 +236,10 @@ uint8_t* copy_pixel_data_tiff(FILE* fp, tiff_info_t* ti) {
 
 	long size = get_data_size_tiff(ti);
 	
-	printf("total image size: %ld\n", size);
-	printf("width: %d,height: %d, w*h=%d, w*h*samples_per_pixel=%d\n", 
-		ti->width, ti->height, ti->width*ti->height, 
-		ti->width*ti->height*ti->samples_per_pixel);
+	//printf("total image size: %ld\n", size);
+	//printf("width: %d,height: %d, w*h=%d, w*h*samples_per_pixel=%d\n", 
+	//	ti->width, ti->height, ti->width*ti->height, 
+	//	ti->width*ti->height*ti->samples_per_pixel);
 
 	uint8_t* ret = malloc( size );
 	uint8_t* ptr = ret;
@@ -315,7 +316,7 @@ tiff_info_t* read_tiff(FILE* fp) {
 	int is_tiff = data[ti->endian ? 1 : 0] == 42;
 	//printf("is_tiff=%d)\n", is_tiff);
 	if(!is_tiff) {
-		printf("Invalid TIFF file\n");
+		fprintf(stderr, "Invalid TIFF file\n");
 		exit(-2);
 	}
 	
@@ -338,8 +339,8 @@ tiff_info_t* read_tiff(FILE* fp) {
 		ifd_entry_t* ie = malloc(sizeof(ifd_entry_t));
 		memset(ie, 0, sizeof(ifd_entry_t));
 		fread(ie, sizeof(ifd_entry_t), 1, fp);
-		printf("  entry %d: %d (%s), %d (%s), %d, %d\n", 
-			i, ie->tag, name_for_tag(ie->tag), ie->field_type, name_for_type(ie->field_type), ie->n_values, ie->value);
+		//printf("  entry %d: %d (%s), %d (%s), %d, %d\n", 
+		//	i, ie->tag, name_for_tag(ie->tag), ie->field_type, name_for_type(ie->field_type), ie->n_values, ie->value);
 
 		ti->ifd_entries[i] = ie;
 		parse_entry(fp, ti, ie);
@@ -347,7 +348,7 @@ tiff_info_t* read_tiff(FILE* fp) {
 
 	// calculate strips-per-image
 	if(ti->compressed == 1) { /* uncompressed */
-		printf("ti->height=%d, ti->n_rows_per_strip=%d\n", ti->height, ti->n_rows_per_strip);
+		//printf("ti->height=%d, ti->n_rows_per_strip=%d\n", ti->height, ti->n_rows_per_strip);
 		ti->n_strips = 
 			floor((ti->height + ti->n_rows_per_strip - 1)/ti->n_rows_per_strip);
 

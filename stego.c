@@ -131,7 +131,6 @@ void hide_message(char* msg,
 	uint8_t reverse_bits) {
 
 	uint32_t msg_len = strlen(msg);
-	printf("msg=%s msg_len=%d\n", msg, msg_len);
 
 	if(msg_len > (data_len/8))
 		return;
