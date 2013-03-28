@@ -10,9 +10,23 @@ uint8_t file_exists(char* file) {
 	return (stat(file, &s) == 0);
 }
 
+long file_size_fp(FILE* fp) {
+	//long curpos = ftell(fp);
+	fseek(fp, 0, SEEK_END);
+	return ftell(fp);
+	//fseek(fp, curpos, SEEK_SET);
+}
+
+long file_size(char* filename) {
+	FILE* fp = fopen(filename, "rb");
+	long ret = file_size_fp(fp);
+	fclose(fp);
+	return ret;
+}
+
 uint8_t read_byte(FILE* fp) {
 	uint8_t val;
-	fread(&val, sizeof(val), 1, fp);
+	fread(&val, 1, 1, fp);
 	return val;
 }
 

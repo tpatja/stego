@@ -1,6 +1,8 @@
 
 CFLAGS=-std=c99 -pedantic -Wall
 
+all: stego tiff_test
+
 tiff_test: tiff_test.c tiff.o util.o
 	gcc $(CFLAGS) tiff_test.c tiff.o util.o -o tiff_test
 
@@ -16,22 +18,27 @@ stego.o: stego.c stego.h
 image_stego.o: image_stego.c
 	gcc -c $(CFLAGS) image_stego.c -o image_stego.o
 
-stego: stego.o util.o image_stego.o
-	gcc $(CFLAGS) image_stego.o stego.o util.o -o stego
+stego: stego.o util.o tiff.o bmp.o image_stego.o
+	gcc $(CFLAGS) image_stego.o stego.o util.o tiff.o bmp.o -o stego
 
 
-all: stego tiff_test
+bmp.o: bmp.c bmp.h
+
+bmp_test: bmp.o util.o bmp_test.c
+	gcc $(CFLAGS) bmp.o util.o bmp_test.c -o bmp_test
+
 
 clean:
 	rm -f *.exe *.o *.stackdump
 
 test_tiff: tiff_test
-	./tiff_test.exe ../nokia.tif foo.tif
-	./tiff_test.exe ../nokia2.tif foo2.tif
-	./tiff_test.exe ../nokia_grayscale.tif foo_grayscale.tif
+	./tiff_test ./img/nokia.tif ./img/foo.tif
+	./tiff_test ./img/nokia2.tif ./img/foo2.tif
+	./tiff_test ./img/nokia_grayscale.tif ./img/foo_grayscale.tif
 
 test_stego: stego
-	./stego.exe
+	./stego
+
 
 srcbundle:
 	rm -f image_stego-src.tar.gz

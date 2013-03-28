@@ -6,6 +6,7 @@
 int main(int argc, char** argv)
 {
 
+	/*
 	static char* filenames[]= {
 		"gen.py",
 		"ei_oo",
@@ -16,7 +17,7 @@ int main(int argc, char** argv)
 	for(int i=0; i<n_filenames; ++i)
 		printf("%s exists: %d\n", filenames[i], file_exists(filenames[i]) );
 	exit(0);
-
+*/
 	if(argc != 3) {
 		printf(" Modifies TIFF files\n");
 		printf("USAGE: %s <TIFF file> <output file>\n", argv[0]);
@@ -40,17 +41,16 @@ int main(int argc, char** argv)
 	}
 
 	printf("copying\n");
-	uint8_t* pixel_data = copy_pixel_data(fp, ti);
+	uint8_t* pixel_data = copy_pixel_data_tiff(fp, ti);
 	printf("adding frame\n");
-	modify_pixel_data(ti, pixel_data);
+	add_red_frame_tiff(ti, pixel_data);
 	printf("saving to %s\n", outfile);
-	put_pixel_data(fp, outfile, ti, pixel_data);
+	put_pixel_data_tiff(fp, outfile, ti, pixel_data);
 	printf("done\n");
 
 	free(pixel_data);
 	fclose(fp);
 	tiff_info_free(ti);
-	free(ti);
 
 	return 0;
 }

@@ -108,71 +108,56 @@ uint8_t extract_byte(FILE* fp, uint8_t reverse_bits) {
 	return get_byte(values);
 }
 
-uint32_t read_pixel_offset(FILE* fp) {
-	fseek(fp, 0xa, SEEK_SET);
-	uint32_t offset;
-	fread(&offset, 4, 1, fp);
-	return offset;
-}
-
-void show_hidden_msg(char* filename, uint8_t reverse_bits) {
-	printf("  show_hidden_msg\n");
-	FILE* fp = fopen(filename, "rb");
-	uint32_t pixel_offset = read_pixel_offset(fp);
-	//printf(" pixel_offset=%u\n", pixel_offset );
-
-	fseek(fp, pixel_offset, SEEK_SET);
-	
-	char* msg = malloc(1);
-	uint32_t i=0;
-	for(;;) {
-		uint8_t decoded = extract_byte(fp, reverse_bits);;
-		msg = realloc(msg, ++i);
-		memcpy(msg +(i-1), &decoded, 1);
-		if(decoded==0)
-			break;
+uint8_t extract_byte_raw(uint8_t* data, uint8_t reverse_bits) {
+	uint8_t values[8];
+	if(reverse_bits) {
+		for(int i=7; i>=0; --i) {
+			values[i] = *(data++);
+		}
 	}
-	printf("hidden message='%s'\n", msg );
-	free(msg);
+	else {
+		for(int i=0; i<8; ++i) {
+			values[i] = *(data++);
+		}
+	}
+	return get_byte(values);
 }
 
 
-/* assumes files are identical. msg must be nul terminated */
-void hide_message(char* bmp_file_in, 
-	char* bmp_file_out, 
-	char* msg,
+
+void hide_message(char* msg, 
+	uint8_t* data,
+	size_t data_len,
 	uint8_t reverse_bits) {
-	
-	printf("hide_message: msg='%s'\n", msg);
-	FILE* fp = fopen(bmp_file_in, "rb");
 
-	if(cp_file(fp, bmp_file_out) != 0)
-		exit(1);
-	fclose(fp);
-	
-	FILE* fp_out = fopen(bmp_file_out, "rb+");
-
-	uint32_t pixel_offset = read_pixel_offset(fp_out);
-	//printf(" pixel_offset=%u\n", pixel_offset );
-	fseek(fp_out, pixel_offset, SEEK_SET);
-	
 	uint32_t msg_len = strlen(msg);
-	int len = (msg_len+1)*8;
-	uint8_t* pdata = malloc( len );
-	/*uint32_t read =*/ fread(pdata, 1, len, fp_out);
-	//printf("read %u bytes, msg len=%d, data len=%d\n", read, msg_len, len);
+	printf("msg=%s msg_len=%d\n", msg, msg_len);
 
-	//hexdump(pdata, len);
+	if(msg_len > (data_len/8))
+		return;
 
 	for(int i=0; i <= msg_len; ++i) {
 		//printf("msg[%d]=%c\n", i, msg[i]);
-		hide_byte(pdata, msg[i], reverse_bits);
-		pdata += 8;
-		if(i==msg_len)
-			pdata -= (len);
+		hide_byte(data+(i*8), msg[i], reverse_bits);
 	}
-	fseek(fp_out, pixel_offset, SEEK_SET);
-	fwrite(pdata, 1, len, fp_out);
-	fclose(fp_out);
-	free(pdata);
+	
 }
+
+char* reveal_message(uint8_t* data,
+	size_t data_len,
+	uint8_t reverse_bits) {
+
+	char* msg=malloc(1);
+	int count=0;
+	for(int i=0; i<data_len; i+=8) {
+		
+		uint8_t decoded = extract_byte_raw(data+i, reverse_bits);
+		msg = realloc(msg, ++count );
+		memcpy(msg +(count-1), &decoded, 1);
+		if(decoded == 0) {
+			break;
+		}
+	}
+	return msg;
+}
+

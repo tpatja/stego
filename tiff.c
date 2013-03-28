@@ -34,6 +34,7 @@ void tiff_info_free(tiff_info_t* ti) {
 		free(ti->strip_offsets);
 		free(ti->strip_bytecounts);
 	//}
+	free(ti);
 }
 
 char* name_for_type(uint8_t type) {
@@ -193,7 +194,7 @@ void parse_entry(FILE* fp, tiff_info_t* ti, ifd_entry_t* ie) {
 }
 
 /* show IFD values with ASCII type */
-void show_ascii_data(FILE* fp, tiff_info_t* ti) {
+void show_ascii_data_tiff(FILE* fp, tiff_info_t* ti) {
 	int fpos = ftell(fp);
 	for(int i=0; i< ti->n_ifd_entries; ++i) {
 		ifd_entry_t * entry = ti->ifd_entries[i];
@@ -226,17 +227,15 @@ void show_tiff_info(FILE* fp, tiff_info_t* ti) {
 	printf("dimensions: %dx%d pixels\n", ti->width, ti->height);
 	printf("strips: %d\n", ti->n_strips);
 	printf("fields with ASCII value:\n");
-	show_ascii_data(fp, ti);
+	show_ascii_data_tiff(fp, ti);
 }
 
 /* mallocs a copy of pixel data in image. assumes chunked RGB format */
-uint8_t* copy_pixel_data(FILE* fp, tiff_info_t* ti) {
+uint8_t* copy_pixel_data_tiff(FILE* fp, tiff_info_t* ti) {
 
-	uint32_t size=0;
-	for(int i=0; i<ti->n_strips; ++i) {
-		size += ti->strip_bytecounts[i];
-	}
-	printf("total image size: %d\n", size);
+	long size = get_data_size_tiff(ti);
+	
+	printf("total image size: %ld\n", size);
 	printf("width: %d,height: %d, w*h=%d, w*h*samples_per_pixel=%d\n", 
 		ti->width, ti->height, ti->width*ti->height, 
 		ti->width*ti->height*ti->samples_per_pixel);
@@ -255,13 +254,12 @@ uint8_t* copy_pixel_data(FILE* fp, tiff_info_t* ti) {
 }
 
 /* adds a red frame around image (FRAME_WIDTH pixels thick) */
-void modify_pixel_data(tiff_info_t* ti, uint8_t* pixel_data) {
+void add_red_frame_tiff(tiff_info_t* ti, uint8_t* pixel_data) {
 	
 	for(uint16_t x=0; x<ti->width; ++x) {
 		for(uint16_t y=0; y<ti->height; ++y) {
 			uint32_t idx = (y*ti->width+x)*ti->samples_per_pixel;
 
-			/* draw frame */
 			if(x % ti->width < FRAME_WIDTH 
 				|| ti->width - (x % ti->width) < FRAME_WIDTH
 				||y % ti->height < FRAME_WIDTH 
@@ -272,7 +270,6 @@ void modify_pixel_data(tiff_info_t* ti, uint8_t* pixel_data) {
 					if(ti->samples_per_pixel>3)
 						pixel_data[idx+3] = 0xff;
 			}
-
 		}
 	}
 }
@@ -280,7 +277,7 @@ void modify_pixel_data(tiff_info_t* ti, uint8_t* pixel_data) {
 
 /* creates a copy of file fp to given filename and writes
    given pixel data to it */
-void put_pixel_data(FILE* fp, 
+void put_pixel_data_tiff(FILE* fp, 
 	char* outfile, 
 	tiff_info_t* ti, 
 	uint8_t* pixel_data) {
@@ -371,4 +368,13 @@ tiff_info_t* read_tiff(FILE* fp) {
 		}
 	}
 	return ti;
+}
+
+
+long get_data_size_tiff(tiff_info_t* ti) {
+	long size;
+	for(int i=0; i<ti->n_strips; ++i) {
+		size += ti->strip_bytecounts[i];
+	}
+	return size;
 }

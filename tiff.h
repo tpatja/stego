@@ -34,15 +34,19 @@ typedef struct {
 
 tiff_info_t* read_tiff(FILE* fp);
 
-void show_ascii_data(FILE* fp, tiff_info_t* ti);
+void show_ascii_data_tiff(FILE* fp, tiff_info_t* ti);
 void show_tiff_info(FILE* fp, tiff_info_t* ti);
 
-uint8_t* copy_pixel_data(FILE* fp, tiff_info_t* ti);
+uint8_t* copy_pixel_data_tiff(FILE* fp, tiff_info_t* ti);
 
-void put_pixel_data(FILE* fp, 
+void add_red_frame_tiff(tiff_info_t* ti, uint8_t* pixel_data);
+
+void put_pixel_data_tiff(FILE* fp, 
 	char* outfile, 
 	tiff_info_t* ti, 
 	uint8_t* pixel_data);
+
+long get_data_size_tiff(tiff_info_t* ti);
 
 void tiff_info_free(tiff_info_t* ti);
 
