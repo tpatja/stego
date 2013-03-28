@@ -1,14 +1,4 @@
 
-/*
-	stego.c
-	
-	hide a message with steganography to a given BMP file
-
-	read a hidden message from given BMP file
-
-	Author: Teemu Patja <tpatja@cs.helsinki.fi>
-
-*/
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>

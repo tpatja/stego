@@ -1,14 +1,6 @@
 #ifndef STEGO_H_
 #define STEGO_H_
 
-/* 
-	stego.h 
-
-	steganography related functions
-
-  Author:Teemu Patja <tpatja@cs.helsinki.fi>
-*/
-
 #include <stdint.h>
 #include <stdio.h>
 

@@ -1,0 +1,26 @@
+Program for performing steganography on image files. Adding a red frame is also supported.
+
+Currently TIFF (uncompressed RGB/RGBA) and BMP (uncompressed 24-bit)
+formats are supported.
+
+Author: Teemu Patja <tp@iki.fi>
+
+TIFF file format reference used:
+http://partners.adobe.com/public/developer/en/tiff/TIFF6.pdf
+
+
+Building:
+$ make 
+
+Usage:
+$ ./stego 
+USAGE: ./stego -h/-u/-f <input-image-file> [<output-file>] [<data-file>]
+
+ where 
+  -h: hide
+  -u: unhide
+  -f: add red frame
+  <input-image-file>: BMP or TIFF image file
+  <output-file>: Filename where modified image will be stored (hide mode)
+                or filename where hidden data will be stored (unhide mode)
+  <data-file>: File containing data to hide (only required when hiding/unhiding)

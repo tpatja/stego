@@ -21,25 +21,20 @@ image_stego.o: image_stego.c
 stego: stego.o util.o tiff.o bmp.o image_stego.o
 	gcc $(CFLAGS) image_stego.o stego.o util.o tiff.o bmp.o -o stego
 
-
 bmp.o: bmp.c bmp.h
+	gcc -c $(CFLAGS) bmp.c -o bmp.o
 
 bmp_test: bmp.o util.o bmp_test.c
 	gcc $(CFLAGS) bmp.o util.o bmp_test.c -o bmp_test
 
-
 clean:
-	rm -f *.exe *.o *.stackdump
+	rm -f *.exe *.o *.stackdump stego bmp_test tiff_test
 
 test_tiff: tiff_test
 	./tiff_test ./img/nokia.tif ./img/foo.tif
 	./tiff_test ./img/nokia2.tif ./img/foo2.tif
 	./tiff_test ./img/nokia_grayscale.tif ./img/foo_grayscale.tif
 
-test_stego: stego
-	./stego
-
-
 srcbundle:
 	rm -f image_stego-src.tar.gz
-	tar -czf image_stego-src.tar.gz *.h *.c Makefile
+	tar -czf image_stego-src.tar.gz *.h *.c Makefile README

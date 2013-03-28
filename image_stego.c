@@ -103,7 +103,11 @@ void handle_tiff(uint8_t opmode,
 		switch(opmode) {
 			case OP_HIDE:
 			{
-				
+				if(!strcmp(in_file, out_file)) {
+					fprintf(stderr, "input and output files must not be the same file\n");
+					exit(1);
+				}
+					
 				FILE* data_f = fopen(data_file, "rb");
 				/* ensure data fits into image */
 				long data_size = file_size_fp(data_f);
@@ -171,6 +175,10 @@ void handle_bmp(uint8_t opmode,
 	switch(opmode) {
 		case OP_HIDE:
 		{
+			if(!strcmp(in_file, out_file)) {
+				fprintf(stderr, "input and output files must not be the same file\n");
+				exit(1);
+			}
 			FILE* data_f = fopen(data_file, "rb");
 			/* ensure data fits into image */
 			long data_size = file_size_fp(data_f);
