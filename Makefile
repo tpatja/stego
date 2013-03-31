@@ -1,5 +1,6 @@
 
 CFLAGS=-std=c99 -pedantic -Wall
+LDFLAGS=-lm
 
 all: stego
 
@@ -16,7 +17,7 @@ image_stego.o: image_stego.c
 	gcc -c $(CFLAGS) image_stego.c -o image_stego.o
 
 stego: stego.o util.o tiff.o bmp.o image_stego.o
-	gcc $(CFLAGS) image_stego.o stego.o util.o tiff.o bmp.o -o stego
+	gcc $(CFLAGS) image_stego.o stego.o util.o tiff.o bmp.o $(LDFLAGS) -o stego
 
 bmp.o: bmp.c bmp.h
 	gcc -c $(CFLAGS) bmp.c -o bmp.o

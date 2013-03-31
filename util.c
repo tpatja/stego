@@ -1,6 +1,7 @@
 /* util.c */
 
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
