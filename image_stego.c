@@ -200,7 +200,6 @@ void handle_bmp(uint8_t opmode,
 				msg,
 				REVERSE_BITS);
 
-			fclose(data_f);
 			break;
 		}
 	 	case OP_ADDFRAME:
