@@ -89,13 +89,21 @@ void handle_tiff(uint8_t opmode,
 		FILE* fp = fopen(in_file, "rb");
 		tiff_info_t* ti = read_tiff(fp);
 		
-		if( !ti 
-			|| ti->compressed != 1 
-		  || ti->photometric_interpretation != 2 
-		  || (ti->samples_per_pixel != 3 && ti->samples_per_pixel != 4) ) {
+		uint8_t grayscale_ok = ((ti->photometric_interpretation == 0 
+			|| ti->photometric_interpretation == 1)
+				&& ti->samples_per_pixel == 1);
+
+		uint8_t color_ok = (ti->photometric_interpretation == 2 && 
+				(ti->samples_per_pixel == 3 || ti->samples_per_pixel == 4));
+
+		//printf("grayscale_ok=%d, color_ok=%d\n", grayscale_ok, color_ok );
+		if(!ti || ti->compressed != 1
+			|| (!grayscale_ok && !color_ok) ) {
 			
 			printf("Only non-compressed "
-				     "RGB and RGBA TIFF files are supported\n");
+				     "Grayscale, RGB and RGBA TIFF files are supported\n");
+		  printf("photometric_interpretation=%d, samples_per_pixel=%d\n", 
+		  	ti->photometric_interpretation, ti->samples_per_pixel);
 			exit(1);
 		}
 		uint8_t* pixel_data = copy_pixel_data_tiff(fp, ti);

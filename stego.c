@@ -114,7 +114,6 @@ uint8_t extract_byte_raw(uint8_t* data, uint8_t reverse_bits) {
 }
 
 
-
 void hide_message(char* msg, 
 	uint8_t* data,
 	size_t data_len,
@@ -125,12 +124,14 @@ void hide_message(char* msg,
 	if(msg_len > (data_len/8))
 		return;
 
-	for(int i=0; i <= msg_len; ++i) {
+	int i;
+	for(i=0; i <= msg_len; ++i) {
 		//printf("msg[%d]=%c\n", i, msg[i]);
 		hide_byte(data+(i*8), msg[i], reverse_bits);
 	}
-	
+	hide_byte(data+(++i*8), 0x0, reverse_bits);	
 }
+
 
 char* reveal_message(uint8_t* data,
 	size_t data_len,
@@ -143,7 +144,7 @@ char* reveal_message(uint8_t* data,
 		uint8_t decoded = extract_byte_raw(data+i, reverse_bits);
 		msg = realloc(msg, ++count );
 		memcpy(msg +(count-1), &decoded, 1);
-		if(decoded == 0) {
+		if(decoded == 0x0) {
 			break;
 		}
 	}

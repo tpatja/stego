@@ -27,7 +27,7 @@ typedef struct {
 	uint8_t samples_per_pixel;
 	uint32_t* strip_offsets;
 	uint32_t* strip_bytecounts;
-	uint8_t photometric_interpretation;
+	uint8_t photometric_interpretation; /* 0->WhiteIsZero, 1->BlackIsZero, 2->RGB */
 	ifd_entry_t** ifd_entries;
 } tiff_info_t;
 

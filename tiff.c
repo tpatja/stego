@@ -227,6 +227,8 @@ void show_tiff_info(FILE* fp, tiff_info_t* ti) {
 	printf("compressed: %d (%s)\n", ti->compressed, compression_type(ti->compressed));
 	printf("dimensions: %dx%d pixels\n", ti->width, ti->height);
 	printf("strips: %d\n", ti->n_strips);
+	printf("photometric_interpretation=%d\n", ti->photometric_interpretation);
+	printf("samples_per_pixel=%d\n", ti->samples_per_pixel);
 	printf("fields with ASCII value:\n");
 	show_ascii_data_tiff(fp, ti);
 }
@@ -254,9 +256,13 @@ uint8_t* copy_pixel_data_tiff(FILE* fp, tiff_info_t* ti) {
 	return ret;
 }
 
-/* adds a red frame around image (FRAME_WIDTH pixels thick) */
+/* adds a red frame around image (FRAME_WIDTH pixels thick) 
+   (white in case of grayscale image) */
 void add_red_frame_tiff(tiff_info_t* ti, uint8_t* pixel_data) {
 	
+	uint8_t bw = ti->samples_per_pixel == 1;
+	uint8_t pixel_value = (bw && ti->photometric_interpretation == 0) ? 0x00 : 0xff;
+
 	for(uint16_t x=0; x<ti->width; ++x) {
 		for(uint16_t y=0; y<ti->height; ++y) {
 			uint32_t idx = (y*ti->width+x)*ti->samples_per_pixel;
@@ -265,11 +271,15 @@ void add_red_frame_tiff(tiff_info_t* ti, uint8_t* pixel_data) {
 				|| ti->width - (x % ti->width) < FRAME_WIDTH
 				||y % ti->height < FRAME_WIDTH 
 				|| ti->height - (y % ti->height) < FRAME_WIDTH ) {
+				if(bw)
+					pixel_data[idx] = pixel_value;
+				else {
 					pixel_data[idx] = 0xff;
 					pixel_data[idx+1] = 0x00;
 					pixel_data[idx+2] = 0x00;
 					if(ti->samples_per_pixel>3)
 						pixel_data[idx+3] = 0xff;
+				}
 			}
 		}
 	}
