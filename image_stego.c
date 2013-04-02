@@ -140,12 +140,12 @@ void handle_tiff(uint8_t opmode,
 			{
 				char* msg = get_hidden_msg_tiff(ti, pixel_data, REVERSE_BITS);
 				if(out_file) {
-					FILE* fp = fopen(out_file, "wb");
-					fwrite(msg, 1, strlen(msg), fp);
-					fclose(fp);
+					FILE* fout = fopen(out_file, "wb");
+					fwrite(msg, 1, strlen(msg), fout);
+					fclose(fout);
 				}
 				else {
-					printf(msg);
+					puts(msg);
 				}
 				free(msg);
 				break;
@@ -153,7 +153,7 @@ void handle_tiff(uint8_t opmode,
 		}
 		free(pixel_data);
 		tiff_info_free(ti);
-
+		fclose(fp);
 }
 
 void handle_bmp(uint8_t opmode, 
@@ -217,7 +217,7 @@ void handle_bmp(uint8_t opmode,
 				fclose(fp);
 			}
 			else {
-				printf(msg);
+				puts(msg);
 			}				
 			free(msg);
 			break;
@@ -225,6 +225,7 @@ void handle_bmp(uint8_t opmode,
 	}
 
 	bmp_info_free(bi);
+	fclose(fp);
 }
 
 
