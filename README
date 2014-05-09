@@ -1,4 +1,4 @@
-Program for performing steganography on image files. Adding a red frame is also supported.
+Program for performing steganography on image files.
 
 Currently TIFF (uncompressed RGB/RGBA) and BMP (uncompressed 24-bit)
 formats are supported.
